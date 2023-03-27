@@ -1,18 +1,19 @@
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
+// todo express app
 const express = require('express');
-const path = require('path');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
-
 const app = express();
+const mongoose = require('mongoose');
+const Todo = require('./model/todo');
+const dotenv = require('dotenv');
+const cors = require('cors');
+dotenv.config();
 
-//mongoose
+app.use(express.static('public'));
+app.use(express.json());
+app.use(cors());
+
+//connect to mongoose
 mongoose
-  .connect(process.env.MONGODB_URL, {
+  .connect(process.env.MONGODB, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -23,24 +24,56 @@ mongoose
     console.log(err);
   });
 
-//middleware
-app.use(express.static(path.join(__dirname, 'build')));
-app.use(express.json());
-app.use(cookieParser());
-app.use(cors());
-
-//import routes
-const usersRouter = require('./routes/usersRoute');
-const restaurantRouter = require('./routes/restaurantRoute');
-const goatRouter = require('./routes/goatRoute');
-const storeRouter = require('./routes/storeRoute');
-
-// define routes
-app.use('/api/users', usersRouter);
-app.use('/api/restaurant', restaurantRouter);
-app.use('/api/goat', goatRouter);
-app.use('/api/store', storeRouter);
-
 app.get('/', (req, res) => {
-  res.sendFile('index');
+  res.sendFile(__dirname + '/public/index.html');
+});
+
+//get all todos using async routes
+app.get('/todos', async (req, res) => {
+  try {
+    const todos = await Todo.find();
+    res.json(todos);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+//get a single todo
+app.get('/todos/:id', async (req, res) => {
+  try {
+    const todo = await Todo.findById(req.params.id);
+    res.json(todo);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+//post a new todo
+app.post('/todos', async (req, res) => {
+  try {
+    const todo = await Todo.create(req.body);
+    res.json(todo);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+//update a todo
+app.put('/todos/:id', async (req, res) => {
+  try {
+    const todo = await Todo.findByIdAndUpdate(req.params.id, req.body);
+    res.json(todo);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+//delete a todo
+app.delete('/todos/:id', async (req, res) => {
+  try {
+    const todo = await Todo.findByIdAndRemove(req.params.id);
+    res.json(todo);
+  } catch (err) {
+    res.status(500).send(err);
+  }
 });
